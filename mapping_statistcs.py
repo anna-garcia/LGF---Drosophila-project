@@ -1,35 +1,49 @@
 #!/usr/bin/python3
 
+## Creating a basic mapping statistical report and a table informing
+## how many times each mapped read had
+
 import sys
-import pysam
+import fileinput
 from collections import defaultdict
-from collections import Counter
 
-bamfile = sys.argv[1]
-outfile = 'mapping_reports'
+sample = sys.argv[1]
+file = sys.argv[2]
 
-bam = pysam.AlignmentFile(bamfile, "rb")
+outfile1 = "/data/analysis/carol/drosophila/Drosophila_snakemake/parental/results/mapping/stats/"+str(sample)+"_mult_map.tsv"
+outfile2 = "/data/analysis/carol/drosophila/Drosophila_snakemake/parental/results/mapping/stats/"+str(sample)+"_stats.tsv"
 
-reads = []
+unmapped = 0
+uniq = 0
+mult = 0
 
-for mapping in bam:
-    if not mapping.is_unmapped:
-        read_id = mapping.query_name
-        reads.append(read_id)
+res = defaultdict(int)
 
-uniquely_mapped = 0
-read_mapping_count = Counter(reads)
+with open(outfile1, "w") as out1:
+    print("Read_ID","Mapping_Count",sep="\t", file=out1)
+    for line in fileinput.input(file):
+        cols = line.strip().split("\t")
+        if cols[2] != "*":
+            res[cols[0]] += 1
+        else:
+            unmapped +=1
+    for i in res:
+        if res[i] == 1:
+            uniq += 1
+        else:
+            mult += 1
+        print(i, res[i], sep="\t",file=out1)
+    out1.close()
+
+all = unmapped + uniq + mult
+
+total_mapped = uniq + mult
 
 
-with open(outfile, "w") as out:
-    print('Read Id:','Mapping Count:',sep='\t',file=out)
-    for a in sorted(read_mapping_count.items(), key=lambda x:x[1]):
-        if a[1] == 1:
-            uniquely_mapped +=1
-        print(a[0], a[1], sep='\t',file=out)
-    total = int(len(read_mapping_count))
-    multimapped = int(len(read_mapping_count)-uniquely_mapped)
-    print()
-    print('Total Reads:',total, sep='\t',file=out)
-    print('Uniquely mapped reads:',uniquely_mapped,'\t',(float(uniquely_mapped/total)*100), file=out)
-    print('Multimapped reads:',multimapped,'\t',(1-(float(uniquely_mapped/total)))*100, file=out)
+with open(outfile2, "w") as out2:
+    print('Total reads:',all, sep='\t',file=out2)
+    print('Unmapped reads:',unmapped,(float(unmapped/all)*100),sep="\t", file=out2)
+    print('Total mapped reads:', total_mapped,(float(total_mapped/all)*100),sep="\t",file=out2)
+    print('Uniquely mapped reads:',uniq,(float(uniq/total_mapped)*100), sep="\t", file=out2)
+    print('Multimapped reads:',mult,(float(mult/total_mapped)*100),sep="\t", file=out2)
+    out2.close()
