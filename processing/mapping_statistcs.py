@@ -19,6 +19,8 @@ mult = 0
 
 res = defaultdict(int)
 
+## counting quantity of mapping per read
+
 with open(outfile1, "w") as out1:
     print("Read_ID","Mapping_Count",sep="\t", file=out1)
     for line in fileinput.input(file):
@@ -39,6 +41,7 @@ all = unmapped + uniq + mult
 
 total_mapped = uniq + mult
 
+## basic mapping statistics file
 
 with open(outfile2, "w") as out2:
     print('Total reads:',all, sep='\t',file=out2)
